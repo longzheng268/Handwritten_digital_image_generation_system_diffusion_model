@@ -32,54 +32,113 @@ window.addEventListener('load', async () => {
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
     const btn = document.getElementById('generate-btn');
-    const digit = document.getElementById('digit').value;
+    const digitInput = document.getElementById('digit').value;
     const model = document.getElementById('model-select').value;
     const guidanceScale = document.getElementById('guidance-scale').value;
     const steps = document.getElementById('steps').value;
 
-    if (!digit || digit < 0 || digit > 9) {
-        alert('请输入0-9之间的数字');
+    if (!digitInput || digitInput.trim() === '') {
+        alert('请输入数字');
         return;
     }
-
+    
+    // 检查输入是否为数字
+    if (!/^\d+$/.test(digitInput)) {
+        alert('请只输入数字 0-9');
+        return;
+    }
+    
     try {
         btn.disabled = true;
         btn.textContent = '生成中...';
-
-        const response = await fetch('/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                digit: parseInt(digit),
-                model: model,
-                guidance_scale: parseFloat(guidanceScale),
-                steps: parseInt(steps)
-            }),
-        });
-
-        const data = await response.json();
-        if (data.status === 'success') {
-            const resultDiv = document.getElementById('result-image');
-            resultDiv.innerHTML = `<img src="${data.image_url}" alt="Generated Digit">`;
-
-            // 记录数字
-            await fetch('/record_digit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    digit: digit
-                }),
-            });
-            updateHistory();
-        } else {
-            alert(data.message || '生成失败');
+        
+        // 清空结果区域
+        document.getElementById('result-image').innerHTML = '';
+        document.getElementById('results-grid').innerHTML = '';
+        
+        // 准备队列
+        const digits = digitInput.split('');
+        const totalDigits = digits.length;
+        
+        // 显示进度区域
+        const progressContainer = document.getElementById('generation-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const currentDigitSpan = document.getElementById('current-digit');
+        const totalDigitsSpan = document.getElementById('total-digits');
+        
+        progressContainer.style.display = 'block';
+        totalDigitsSpan.textContent = totalDigits;
+        
+        // 创建结果网格
+        const resultsGrid = document.getElementById('results-grid');
+        
+        // 逐个处理数字
+        for (let i = 0; i < digits.length; i++) {
+            const digit = digits[i];
+            
+            // 更新进度
+            currentDigitSpan.textContent = i + 1;
+            progressBar.style.width = `${((i + 1) / totalDigits) * 100}%`;
+            
+            try {
+                // 生成当前数字
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        digit: parseInt(digit),
+                        model: model,
+                        guidance_scale: parseFloat(guidanceScale),
+                        steps: parseInt(steps)
+                    }),
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    // 创建结果项目
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    resultItem.innerHTML = `
+                        <img src="${data.image_url}" alt="Generated ${digit}">
+                        <div class="result-digit">数字 ${digit}</div>
+                    `;
+                    
+                    // 添加到网格
+                    resultsGrid.appendChild(resultItem);
+                    
+                    // 记录数字
+                    await fetch('/record_digit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            digit: digit
+                        }),
+                    });
+                    
+                    // 即时更新历史记录
+                    updateHistory();
+                    
+                    // 滚动到最新结果
+                    resultItem.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else {
+                    console.error(`生成数字 ${digit} 失败:`, data.message);
+                    // 继续处理下一个数字
+                }
+            } catch (error) {
+                console.error(`处理数字 ${digit} 时出错:`, error);
+                // 继续处理下一个数字
+            }
         }
+        
+        // 所有数字处理完成
+        progressContainer.style.display = 'none';
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('整体处理出错:', error);
         alert('生成过程中出现错误');
     } finally {
         btn.disabled = false;

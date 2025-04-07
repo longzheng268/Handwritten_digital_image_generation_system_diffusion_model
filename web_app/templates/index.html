@@ -7,8 +7,16 @@
         <div class="panel">
             <h2>手写数字生成</h2>
             <div class="controls">
-                <label for="digit">请输入数字 (0-9):</label>
-                <input type="number" id="digit" min="0" max="9" required>
+                <label for="digit">请输入数字:</label>
+                <input type="text" id="digit" placeholder="例如：20020315" required>
+                
+                <!-- 添加进度显示区域 -->
+                <div id="generation-progress" class="progress-container" style="display: none;">
+                    <div class="progress-text">正在生成: <span id="current-digit"></span>/<span id="total-digits"></span></div>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
                 
                 <label for="model-select">选择模型:</label>
                 <select id="model-select">
@@ -42,6 +50,8 @@
         <div class="result-panel">
             <h3>生成结果</h3>
             <div id="result-image"></div>
+            <!-- 添加网格布局显示多个结果 -->
+            <div id="results-grid" class="results-grid"></div>
         </div>
         
         <div class="result-panel">

@@ -1,9 +1,37 @@
-openai
-chart>=3.0.0 
-matplotlib
-torch
-torchvision
-numpy
-PIL
-requests
+# Web框架
+Flask>=2.0.0
+
+# 深度学习
+torch>=1.9.0
+torchvision>=0.10.0
+
+# 数据处理
+numpy>=1.20.0
+Pillow>=8.0.0  # PIL库
+matplotlib>=3.4.0
+
+# API调用
+openai>=1.0.0
+
+# HTTP请求
+requests>=2.25.0
+
+# 图表生成(前端使用Chart.js，这只是后端可能需要的库)
+tqdm>=4.60.0  # 用于进度条显示
+
+# 核心依赖
+Flask>=2.0.0  # Web框架
+torch>=1.9.0  # PyTorch
+torchvision>=0.10.0  # 图像处理
+numpy>=1.20.0  # 数学计算
+
+# API和数据处理
+openai>=1.0.0  # OpenAI API客户端
+Pillow>=8.0.0  # 图像处理
+matplotlib>=3.4.0  # 可视化
+
+# 辅助工具
+requests>=2.25.0  # HTTP请求
+tqdm>=4.60.0  # 进度条
+tensorboard
 
