@@ -1,6 +1,9 @@
 import sys
 import os
 import glob
+from collections import defaultdict
+from openai import OpenAI
+import re
 
 # 获取当前文件所在目录的绝对路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +35,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # 初始化设备
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"使用设备: {device}")
+
+# 在app实例后添加
+digit_history = defaultdict(int)
 
 def get_available_models():
     """获取models目录下所有.pth文件"""
@@ -132,6 +138,134 @@ def generate():
 @app.route('/images/<filename>')
 def serve_image(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/record_digit', methods=['POST'])
+def record_digit():
+    data = request.json
+    digit = data.get('digit')
+    if digit is not None:
+        digit_history[digit] += 1
+    return jsonify({'status': 'success'})
+
+@app.route('/get_history')
+def get_history():
+    # 确保所有键都是相同类型(字符串)
+    formatted_history = {str(k): v for k, v in digit_history.items()}
+    return jsonify({
+        'history': formatted_history,
+        'total': sum(digit_history.values())
+    })
+
+# 添加API配置
+def extract_numbers_from_text(text):
+    """使用LLM从文本中提取数字"""
+    try:
+        client = OpenAI(
+            base_url="https://api.ppinfra.com/v3/openai",
+            api_key="sk_N1nJclU43CVM22_EXQWhg58ntAF49EKUubjRlBsoZ_k",
+        )
+        
+        prompt = f"""请从以下文本中提取所有数字，包括：
+        1. 阿拉伯数字（如1, 2, 3）
+        2. 中文数字（如一, 二, 三, 十, 百）
+        3. 英文数字（如one, two, three）
+        
+        文本内容："{text}"
+        
+        请将所有识别到的数字转换为阿拉伯数字，并用逗号分隔返回。
+        例如，如果文本中有"twelve", "两个"和"5"，则返回"12,2,5"。
+        """
+        
+        response = client.chat.completions.create(
+            model="deepseek/deepseek-v3/community",
+            messages=[
+                {"role": "system", "content": "你是一个专门提取文本中数字的助手，负责将各种形式的数字转换为阿拉伯数字。"},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0
+        )
+        
+        extracted = response.choices[0].message.content.strip()
+        print(f"API返回结果: {extracted}")  # 添加调试信息
+        return extracted
+    except Exception as e:
+        print(f"API调用错误: {str(e)}")
+        # 作为备选，使用简单的正则表达式提取阿拉伯数字
+        numbers = re.findall(r'\d+', text)
+        return ','.join(numbers)
+
+# 添加本地数字提取函数
+def extract_numbers_locally(text):
+    """本地提取文本中的数字"""
+    # 提取阿拉伯数字
+    arabic_numbers = re.findall(r'\d+', text)
+    
+    # 中文数字映射
+    cn_num_map = {
+        '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, 
+        '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
+    }
+    
+    # 英文数字映射
+    en_num_map = {
+        'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+    }
+    
+    # 提取中文数字
+    chinese_numbers = []
+    for cn_num, value in cn_num_map.items():
+        if cn_num in text:
+            chinese_numbers.append(str(value))
+    
+    # 提取英文数字 (不区分大小写)
+    english_numbers = []
+    text_lower = text.lower()
+    for en_num, value in en_num_map.items():
+        if en_num in text_lower:
+            english_numbers.append(str(value))
+    
+    # 合并所有提取到的数字
+    all_numbers = arabic_numbers + chinese_numbers + english_numbers
+    return ','.join(all_numbers)
+
+# 修改 extract_numbers 函数
+@app.route('/extract_numbers', methods=['POST'])
+def extract_numbers():
+    """从文本中提取数字的API端点"""
+    data = request.json
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({'status': 'error', 'message': '请输入文本'})
+    
+    try:
+        # 首先尝试使用API提取
+        extracted_numbers = extract_numbers_from_text(text)
+        # 如果API失败或未提取到数字，使用本地提取
+        if not extracted_numbers or extracted_numbers.strip() == '':
+            print("API提取失败，切换到本地提取")
+            extracted_numbers = extract_numbers_locally(text)
+    except Exception as e:
+        print(f"提取错误: {str(e)}")
+        # 出错时使用本地提取
+        extracted_numbers = extract_numbers_locally(text)
+    
+    # 记录提取到的数字
+    if extracted_numbers:
+        for num_str in extracted_numbers.split(','):
+            try:
+                num = int(num_str.strip())
+                if 0 <= num <= 9:
+                    digit_history[num] += 1
+            except ValueError:
+                pass
+    
+    return jsonify({
+        'status': 'success',
+        'extracted_numbers': extracted_numbers
+    })
 
 if __name__ == '__main__':
     app.run(debug=True) 

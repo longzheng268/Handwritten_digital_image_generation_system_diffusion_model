@@ -1,1 +1,9 @@
-visdom>=0.1.8.9 
+openai
+chart>=3.0.0 
+matplotlib
+torch
+torchvision
+numpy
+PIL
+requests
+

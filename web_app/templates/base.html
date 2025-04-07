@@ -5,8 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}手写数字生成系统{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            transition: background-image 1s ease-in-out;
+        }
+    </style>
 </head>
 <body>
+    <div class="overlay"></div>
     <header>
         <h1>手写数字生成系统</h1>
     </header>
@@ -16,6 +25,32 @@
     <footer>
         <p>基于扩散模型的手写数字生成系统</p>
     </footer>
+    
+    <script>
+        // 使用更可靠的背景图源
+        const backgrounds = [
+            'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1920&h=1080',
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1920&h=1080',
+            'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1920&h=1080',
+            'https://images.unsplash.com/photo-1569396116180-210c182bedb8?auto=format&fit=crop&w=1920&h=1080',
+            'https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1920&h=1080'
+        ];
+        
+        // 初始随机背景
+        function setRandomBackground() {
+            const randomIndex = Math.floor(Math.random() * backgrounds.length);
+            document.body.style.backgroundImage = `url('${backgrounds[randomIndex]}')`;
+            console.log("背景已更换为:", backgrounds[randomIndex]); // 调试信息
+        }
+        
+        // 页面加载时设置随机背景
+        document.addEventListener('DOMContentLoaded', setRandomBackground);
+        
+        // 每隔30秒更换一次背景
+        setInterval(setRandomBackground, 30000);
+    </script>
+    
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html> 

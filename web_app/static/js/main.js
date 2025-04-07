@@ -25,6 +25,9 @@ window.addEventListener('load', async () => {
     stepsSlider.addEventListener('input', () => {
         stepsValue.textContent = stepsSlider.value;
     });
+
+    // 初始化时加载历史
+    updateHistory();
 });
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
@@ -60,6 +63,18 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
         if (data.status === 'success') {
             const resultDiv = document.getElementById('result-image');
             resultDiv.innerHTML = `<img src="${data.image_url}" alt="Generated Digit">`;
+
+            // 记录数字
+            await fetch('/record_digit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    digit: digit
+                }),
+            });
+            updateHistory();
         } else {
             alert(data.message || '生成失败');
         }
@@ -70,4 +85,93 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
         btn.disabled = false;
         btn.textContent = '生成';
     }
-}); 
+});
+
+// 修改数字提取处理部分
+document.getElementById('extract-btn')?.addEventListener('click', async () => {
+    const textInput = document.getElementById('text-input').value;
+    const resultDiv = document.getElementById('extraction-result');
+    const btn = document.getElementById('extract-btn');
+    
+    if (!textInput) {
+        alert('请输入文本');
+        return;
+    }
+    
+    try {
+        btn.disabled = true;
+        btn.textContent = '提取中...';
+        resultDiv.innerHTML = '<p>正在分析文本...</p>';
+        
+        const response = await fetch('/extract_numbers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: textInput }),
+        });
+        
+        const data = await response.json();
+        console.log("API返回:", data);  // 添加调试信息
+        
+        if (data.status === 'success') {
+            if (!data.extracted_numbers || data.extracted_numbers.trim() === '') {
+                resultDiv.innerHTML = `<p>未能从文本中提取到任何数字</p>`;
+                return;
+            }
+            
+            const numbers = data.extracted_numbers.split(',').filter(n => n.trim() !== '');
+            
+            if (numbers.length === 0) {
+                resultDiv.innerHTML = `<p>未能从文本中提取到任何数字</p>`;
+            } else {
+                // 显示提取结果
+                resultDiv.innerHTML = `
+                    <p>从文本中提取到 ${numbers.length} 个数字:</p>
+                    <div>
+                        ${numbers.map(num => `<span class="extracted-number">${num.trim()}</span>`).join('')}
+                    </div>
+                `;
+            }
+            
+            // 更新历史记录
+            updateHistory();
+        } else {
+            resultDiv.innerHTML = `<p>提取失败: ${data.message || '未知错误'}</p>`;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        resultDiv.innerHTML = '<p>提取过程中出现错误，请查看控制台</p>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '提取数字';
+    }
+});
+
+// 添加历史更新函数
+async function updateHistory() {
+    try {
+        const response = await fetch('/get_history');
+        const data = await response.json();
+        
+        // 更新列表，使用更美观的布局
+        const list = document.getElementById('history-list');
+        
+        if (Object.keys(data.history).length === 0) {
+            list.innerHTML = '<div class="empty-history">暂无生成历史</div>';
+            return;
+        }
+        
+        list.innerHTML = Object.entries(data.history)
+            .sort((a, b) => b[1] - a[1])
+            .map(([digit, count]) => `
+                <div class="history-item">
+                    <div class="digit">${digit}</div>
+                    <div class="count-bar" style="width: ${Math.min(100, count*10)}%;">${count}</div>
+                </div>
+            `).join('');
+        
+    } catch (error) {
+        console.error('Error fetching history:', error);
+    }
+} 
