@@ -14,9 +14,10 @@ build/
 .vscode/
 .idea/
 
-# Dataset and model weights
+# Dataset, samples and model weights
 data/
 models/*.pth
+samples/
 
 # Training logs
 logs/
