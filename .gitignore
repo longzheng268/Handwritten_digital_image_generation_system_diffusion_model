@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+.env
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Dataset and model weights
+data/
+models/*.pth
+
+# Training logs
+logs/
+
+# Generated images from web app
+web_app/static/images/*.png
+
+# OS
+.DS_Store
+Thumbs.db

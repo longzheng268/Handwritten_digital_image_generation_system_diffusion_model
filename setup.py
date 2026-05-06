@@ -48,7 +48,7 @@ setup(
     description="使用扩散模型生成手写数字的项目",
     author="Your Name",
     packages=find_packages(),
-    python_requires=">=3.8",
+    python_requires=">=3.11",
     install_requires=[
         'torch>=2.0.0',        # PyTorch深度学习框架
         'torchvision>=0.15.0', # PyTorch图像工具
