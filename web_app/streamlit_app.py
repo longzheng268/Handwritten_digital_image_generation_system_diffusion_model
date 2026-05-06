@@ -117,39 +117,59 @@ def extract_numbers_locally(text):
 
 
 def extract_numbers_from_text(text):
-    """使用LLM从文本中提取数字（通过环境变量配置）"""
+    """使用LLM从文本中提取数字（支持 OpenAI 兼容和 Anthropic 两种接口）
+    环境变量：
+        LLM_PROVIDER: 'openai'（默认）或 'anthropic'
+        LLM_API_KEY: API密钥
+        LLM_BASE_URL: API地址（仅OpenAI兼容接口需要）
+        LLM_MODEL: 模型名称
+    """
+    provider = os.environ.get('LLM_PROVIDER', 'openai').lower()
     api_key = os.environ.get('LLM_API_KEY', '')
     base_url = os.environ.get('LLM_BASE_URL', 'https://api.ppinfra.com/v3/openai')
+    model_name_llm = os.environ.get('LLM_MODEL', 'deepseek/deepseek-v3/community')
 
     if not api_key:
         return extract_numbers_locally(text)
 
+    prompt = f"""请从以下文本中提取所有数字，包括：
+    1. 阿拉伯数字（如1, 2, 3）
+    2. 中文数字（如一, 二, 三, 十, 百）
+    3. 英文数字（如one, two, three）
+
+    文本内容："{text}"
+
+    请将所有识别到的数字转换为阿拉伯数字，并用逗号分隔返回。
+    例如，如果文本中有"twelve", "两个"和"5"，则返回"12,2,5"。
+    """
+
+    system_msg = "你是一个专门提取文本中数字的助手，负责将各种形式的数字转换为阿拉伯数字。"
+
     try:
-        from openai import OpenAI
-        client = OpenAI(base_url=base_url, api_key=api_key)
+        if provider == 'anthropic':
+            from anthropic import Anthropic
+            client = Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model=model_name_llm,
+                max_tokens=1000,
+                system=system_msg,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            extracted = response.content[0].text.strip()
+        else:
+            from openai import OpenAI
+            client = OpenAI(base_url=base_url, api_key=api_key)
+            response = client.chat.completions.create(
+                model=model_name_llm,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1000,
+                temperature=0
+            )
+            extracted = response.choices[0].message.content.strip()
 
-        prompt = f"""请从以下文本中提取所有数字，包括：
-        1. 阿拉伯数字（如1, 2, 3）
-        2. 中文数字（如一, 二, 三, 十, 百）
-        3. 英文数字（如one, two, three）
-
-        文本内容："{text}"
-
-        请将所有识别到的数字转换为阿拉伯数字，并用逗号分隔返回。
-        例如，如果文本中有"twelve", "两个"和"5"，则返回"12,2,5"。
-        """
-
-        response = client.chat.completions.create(
-            model="deepseek/deepseek-v3/community",
-            messages=[
-                {"role": "system", "content": "你是一个专门提取文本中数字的助手，负责将各种形式的数字转换为阿拉伯数字。"},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1000,
-            temperature=0
-        )
-
-        extracted = response.choices[0].message.content.strip()
         if not extracted or extracted.strip() == '':
             return extract_numbers_locally(text)
         return extracted
@@ -166,8 +186,82 @@ if 'history' not in st.session_state:
 st.set_page_config(
     page_title="手写数字生成系统",
     page_icon="✏️",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# 注入自定义 CSS（深色主题 + 玻璃拟态风格，与 Flask 版保持一致）
+st.markdown("""
+<style>
+/* 全局深色背景 */
+.stApp {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+}
+
+/* 侧边栏深色 */
+section[data-testid="stSidebar"] {
+    background-color: rgba(30, 30, 50, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 标题颜色 */
+h1, h2, h3 {
+    color: #4dc6ff !important;
+}
+
+/* 分割线 */
+hr {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 按钮样式 */
+.stButton > button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    padding: 0.5rem 1.5rem;
+    transition: background-color 0.2s;
+}
+
+.stButton > button:hover {
+    background-color: #45a049;
+}
+
+/* 输入框深色风格 */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 滑块颜色 */
+.stSlider > div > div > div > div {
+    background-color: #4dc6ff;
+}
+
+/* metric 卡片 */
+div[data-testid="stMetric"] {
+    background-color: rgba(30, 30, 50, 0.85);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+div[data-testid="stMetric"] label {
+    color: #4dc6ff !important;
+}
+
+/* 页脚 */
+.stCaption {
+    color: #aaa;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("手写数字生成系统")
 st.caption("基于扩散模型 (DDPM) 的手写数字图片生成 | MNIST 数据集")
