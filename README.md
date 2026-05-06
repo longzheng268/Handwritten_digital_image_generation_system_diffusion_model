@@ -116,7 +116,9 @@ python web_app/app.py
 
 ```powershell
 $env:LLM_API_KEY = "your-api-key"
-$env:LLM_BASE_URL = "https://api.ppinfra.com/v3/openai"  # 可选
+$env:LLM_BASE_URL = "https://api.xiaomimimo.com/v1"  # 可选
+$env:LLM_MODEL = "mimo-v2.5-pro"                      # 可选
+$env:LLM_PROVIDER = "openai"                              # 可选，"openai" 或 "anthropic"
 python web_app/app.py
 ```
 
@@ -131,6 +133,8 @@ streamlit run web_app/streamlit_app.py
 浏览器访问 `http://localhost:8501`。
 
 > 在线演示地址：https://handwrittendigitalimagegenerationsystemdiffusionmodel.streamlit.app
+>
+> ⚠️ 注意：Streamlit Cloud 免费版无 GPU，CPU 性能有限，生成速度较慢（约 30-60 秒），仅作为功能演示用途。本地运行或使用 GPU 服务器体验更佳。
 
 ### TensorBoard 监控
 

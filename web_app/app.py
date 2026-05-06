@@ -164,8 +164,8 @@ def extract_numbers_from_text(text):
     """
     provider = os.environ.get('LLM_PROVIDER', 'openai').lower()
     api_key = os.environ.get('LLM_API_KEY', '')
-    base_url = os.environ.get('LLM_BASE_URL', 'https://api.ppinfra.com/v3/openai')
-    model_name_llm = os.environ.get('LLM_MODEL', 'deepseek/deepseek-v3/community')
+    base_url = os.environ.get('LLM_BASE_URL', 'https://api.xiaomimimo.com/v1')
+    model_name_llm = os.environ.get('LLM_MODEL', 'mimo-v2.5-pro')
 
     if not api_key:
         print("未配置 LLM_API_KEY 环境变量，使用本地提取")
