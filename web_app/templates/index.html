@@ -2,28 +2,68 @@
 
 {% block content %}
 <div class="generator-container">
-    <div class="controls">
-        <label for="digit">请输入数字 (0-9):</label>
-        <input type="number" id="digit" min="0" max="9" required>
-        
-        <label for="model-select">选择模型:</label>
-        <select id="model-select">
-            <option value="">加载中...</option>
-        </select>
+    <div class="control-panels">
+        <!-- 左侧面板：数字生成控制 -->
+        <div class="panel">
+            <h2>手写数字生成</h2>
+            <div class="controls">
+                <label for="digit">请输入数字:</label>
+                <input type="text" id="digit" placeholder="例如：20020315" required>
 
-        <label for="guidance-scale">引导强度:</label>
-        <input type="range" id="guidance-scale" min="0" max="5" step="0.1" value="2.0">
-        <span id="guidance-value">2.0</span>
-        
-        <label for="steps">采样步数:</label>
-        <input type="range" id="steps" min="50" max="400" step="10" value="200">
-        <span id="steps-value">200</span>
-        
-        <button id="generate-btn">生成</button>
+                <!-- 添加进度显示区域 -->
+                <div id="generation-progress" class="progress-container" style="display: none;">
+                    <div class="progress-text">正在生成: <span id="current-digit"></span>/<span id="total-digits"></span></div>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <label for="model-select">选择模型:</label>
+                <select id="model-select">
+                    <option value="">加载中...</option>
+                </select>
+
+                <label for="guidance-scale">引导强度:</label>
+                <input type="range" id="guidance-scale" min="0" max="5" step="0.1" value="2.0">
+                <span id="guidance-value">2.0</span>
+
+                <label for="steps">采样步数:</label>
+                <input type="range" id="steps" min="50" max="400" step="10" value="200">
+                <span id="steps-value">200</span>
+
+                <button id="generate-btn">生成</button>
+            </div>
+        </div>
+
+        <!-- 右侧面板：文本数字提取 -->
+        <div class="panel">
+            <h2>文本数字提取</h2>
+            <div class="text-extractor">
+                <textarea id="text-input" placeholder="请输入文本，例如：'我有三个苹果和五个梨子，总共8个水果'"></textarea>
+                <button id="extract-btn">提取数字</button>
+            </div>
+        </div>
     </div>
-    <div class="result-container">
-        <h2>生成结果:</h2>
-        <div id="result-image"></div>
+
+    <!-- 结果显示区域 -->
+    <div class="results-section">
+        <div class="result-panel">
+            <h3>生成结果</h3>
+            <div id="result-image"></div>
+            <!-- 添加网格布局显示多个结果 -->
+            <div id="results-grid" class="results-grid"></div>
+        </div>
+
+        <div class="result-panel">
+            <h3>提取结果</h3>
+            <div id="extraction-result" class="result-box"></div>
+        </div>
+    </div>
+
+    <!-- 历史数据 -->
+    <div class="history-panel">
+        <h3>数字生成历史</h3>
+        <div id="history-list" class="enhanced-history-list"></div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

@@ -6,9 +6,14 @@
 
 ## 功能特性
 
+- **批量生成**：支持输入多位数字（如学号"20020315"），逐个生成并以网格展示，带实时进度条
+- **文本数字提取**：支持从自然语言文本中提取数字（中文/英文/阿拉伯数字），可接入 LLM API 或本地正则提取
+- **生成历史记录**：自动统计生成过的数字频次，实时展示
 - **条件生成**：支持指定数字类别（0-9）进行条件图像生成
 - **Classifier-Free Guidance**：通过调节引导强度（guidance scale）控制生成质量与多样性
-- **Web 可视化界面**：基于 Flask 的 Web 应用，用户可通过浏览器交互式生成图像
+- **双 Web 前端**：
+  - **Flask 版**：深色主题 + Unsplash 动态背景 + 玻璃拟态风格
+  - **Streamlit 版**：一键部署到 Streamlit Cloud
 - **训练过程可视化**：集成 TensorBoard，实时监控训练损失、学习率和生成样本
 - **动态生成过程展示**：保存扩散去噪过程的动画 GIF，直观展示从噪声到图像的生成过程
 - **GPU 加速**：支持 CUDA 加速训练和推理
@@ -23,15 +28,19 @@
 │   ├── data_loader.py       # 数据加载器
 │   ├── mnist_loader.py      # MNIST 数据集加载工具
 │   └── config.py            # 训练配置
-├── web_app/                 # Flask Web 应用
+├── web_app/                 # Web 应用
 │   ├── app.py               # Flask 服务端
+│   ├── streamlit_app.py     # Streamlit 版前端（可部署到 Streamlit Cloud）
 │   ├── templates/           # HTML 模板
 │   └── static/              # 静态资源（CSS/JS/生成图片）
 ├── models/                  # 模型权重文件（.pth）
 ├── samples/                 # 生成样本图片和动画 GIF
 ├── logs/                    # TensorBoard 日志
 ├── data/                    # MNIST 数据集
-└── setup.py                 # 项目配置与依赖声明
+├── config.py                # 全局训练配置
+├── setup.py                 # 项目配置与依赖声明
+├── requirements.txt         # Flask 版依赖
+└── requirements_streamlit.txt # Streamlit 版依赖
 ```
 
 ## 技术方案
@@ -42,9 +51,10 @@
 | 模型架构 | U-Net（残差卷积块 + 时间/类别嵌入） |
 | 扩散算法 | DDPM，线性 beta 调度，400 步扩散 |
 | 数据集 | MNIST 手写数字数据集（28×28 灰度图） |
-| Web 框架 | Flask >= 2.0 |
+| Web 框架 | Flask >= 2.0 / Streamlit >= 1.30 |
 | 训练监控 | TensorBoard |
 | 图像处理 | Pillow、torchvision |
+| 文本数字提取 | OpenAI SDK（接入 LLM API）+ 本地正则回退 |
 
 ### 模型参数
 
@@ -94,11 +104,33 @@ python -m model_training.train
 
 ### 启动 Web 应用
 
+**Flask 版：**
+
 ```bash
 python web_app/app.py
 ```
 
 浏览器访问 `http://localhost:5000`，即可通过界面输入数字生成手写数字图像。
+
+**文本数字提取功能（Flask 版）需配置 LLM API 环境变量：**
+
+```powershell
+$env:LLM_API_KEY = "your-api-key"
+$env:LLM_BASE_URL = "https://api.ppinfra.com/v3/openai"  # 可选
+python web_app/app.py
+```
+
+未配置环境变量时，文本数字提取自动回退到本地正则提取。
+
+**Streamlit 版：**
+
+```bash
+streamlit run web_app/streamlit_app.py
+```
+
+浏览器访问 `http://localhost:8501`。
+
+> 在线演示地址：https://handwrittendigitalimagegenerationsystemdiffusionmodel.streamlit.app
 
 ### TensorBoard 监控
 
